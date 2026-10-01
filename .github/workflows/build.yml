@@ -1,36 +1,27 @@
 name: Build & Release
 
 on:
-  # 只认 tag，push 到 main 不再触发。
-  #   v*      -> 构建 + 发布 Release
-  #   build-* -> 只构建、只上传 artifact，不发布（用来验证发布产物）
   push:
     tags:
       - 'v*'
       - 'build-*'
-
-  # PR 上做编译校验；只动文档的 PR 跳过，省一次 Windows 构建。
   pull_request:
     paths-ignore:
       - '**.md'
       - 'LICENSE'
       - '.gitignore'
       - '.gitattributes'
-
   workflow_dispatch:
 
-# 同一分支/PR 上的新推送取消还在跑的旧任务，避免排队堆积。
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: write        # 打 tag 时要创建 Release
+  contents: write
 
 jobs:
   build:
-    # Windows Server 2025 的镜像已带 Visual Studio 2026（工程用的是 v145 工具集）。
-    # 若你的账号还没迁到新镜像、拿到的仍是 VS 2022，下面会自动退回 v143。
     runs-on: windows-2025
 
     steps:
@@ -42,16 +33,10 @@ jobs:
         run: |
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
           if (-not (Test-Path $vswhere)) { throw "找不到 vswhere.exe" }
-
-          $msbuild = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild `
-                                -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
+          $msbuild = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
           if (-not $msbuild) { throw "找不到 MSBuild.exe" }
-
-          # 工程写死的是 v145（VS 2026）。镜像若还是 VS 2022，就退回 v143 ——
-          # 否则整条流水线会卡在「PlatformToolset v145 未安装」上。
           $ver = & $vswhere -latest -property installationVersion
           $toolset = if ($ver -like '18.*') { 'v145' } else { 'v143' }
-
           Write-Host "MSBuild  : $msbuild"
           Write-Host "VS 版本  : $ver"
           Write-Host "工具集   : $toolset"
@@ -61,25 +46,27 @@ jobs:
       - name: 构建 Release
         shell: pwsh
         run: |
-          # 直接编 .vcxproj，不经过 .slnx —— 少一个 MSBuild 版本依赖。
-          # 这个工程没有外部库依赖（MinHook 是源码直接编进来的），所以不需要额外准备。
-          # Release 配置会由工程自带的 ReleaseZip 目标顺手打出 x64\Release\*.zip。
-          & "${{ steps.vs.outputs.msbuild }}" YuanShen-UnlockerLite.vcxproj `
-              -p:Configuration=Release -p:Platform=x64 `
-              -p:PlatformToolset=${{ steps.vs.outputs.toolset }} `
-              -m -nologo -v:minimal
+          & "${{ steps.vs.outputs.msbuild }}" YuanShen-UnlockerLite.vcxproj -p:Configuration=Release -p:Platform=x64 -p:PlatformToolset=${{ steps.vs.outputs.toolset }} -m -nologo -v:minimal
           if ($LASTEXITCODE -ne 0) { throw "构建失败，退出码 $LASTEXITCODE" }
+
+      - name: UPX压缩与重新打包
+        shell: pwsh
+        run: |
+          choco install upx --no-progress
+          Expand-Archive -Path x64/Release/YuanShen-UnlockerLite.zip -DestinationPath x64/Release/upx_temp
+          upx -9 x64/Release/upx_temp/YuanShen-UnlockerLite.dll
+          Remove-Item -Force x64/Release/YuanShen-UnlockerLite.zip
+          Compress-Archive -Path x64/Release/upx_temp/* -DestinationPath x64/Release/YuanShen-UnlockerLite.zip
+          Remove-Item -Recurse -Force x64/Release/upx_temp
 
       - name: 校验产物
         shell: pwsh
         run: |
           $zip = "x64/Release/YuanShen-UnlockerLite.zip"
           if (-not (Test-Path $zip)) { throw "没有生成 $zip" }
-
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $archive = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $zip))
           try { $names = @($archive.Entries.FullName) } finally { $archive.Dispose() }
-
           Write-Host ("包内: " + ($names -join ", "))
           foreach ($need in 'YuanShen-UnlockerLite.dll', 'Config.ini') {
             if ($names -notcontains $need) { throw "包里缺少 $need" }
@@ -93,14 +80,9 @@ jobs:
           path: x64/Release/YuanShen-UnlockerLite.zip
 
       - name: 打 tag 时发布 Release
-        # 只有 v* tag 发布；build-* tag 走到这里会跳过，只留 artifact。
         if: startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 用 runner 自带的 gh，不依赖第三方 action
-          gh release create "${{ github.ref_name }}" `
-             "x64/Release/YuanShen-UnlockerLite.zip" `
-             --title "${{ github.ref_name }}" `
-             --generate-notes
+          gh release create "${{ github.ref_name }}" "x64/Release/YuanShen-UnlockerLite.zip" --title "${{ github.ref_name }}" --generate-notes
