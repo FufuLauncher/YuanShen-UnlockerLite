@@ -1,4 +1,4 @@
-﻿
+
 
 # 兜底：文本文件自动判定，二进制不动
 * text=auto
@@ -12,6 +12,9 @@
 *.vcxproj.filters   text eol=crlf
 *.vcxproj.user      text eol=crlf
 *.slnx              text eol=crlf
+
+# ── 源文件统一 UTF-8 with BOM──────────────────
+
 
 # git 自身的配置文件保持 LF
 # （不写这两条的话，core.autocrlf=true 时会把它俩也转成 CRLF）
