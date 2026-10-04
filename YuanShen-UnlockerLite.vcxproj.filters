@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="src">
@@ -10,7 +10,10 @@
     <Filter Include="src\Core">
       <UniqueIdentifier>{79c72599-e203-43eb-92f2-ac379f050e49}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\FovUnlock">
+    <Filter Include="src\TeamProgress">
+      <UniqueIdentifier>{8b1c6f42-7d3e-4a91-9c05-2e6f1a8d4b70}</UniqueIdentifier>
+    </Filter>
+  <Filter Include="src\FovUnlock">
       <UniqueIdentifier>{7D2A90F3-5C68-41BE-A385-6E4F19B0C752}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\FpsUnlock">
@@ -68,6 +71,9 @@
     </ClInclude>
     <ClInclude Include="src\FovUnlock\ExponentialFilter.h">
       <Filter>src\FovUnlock</Filter>
+    </ClInclude>
+    <ClInclude Include="src\TeamProgress\TeamProgress.h">
+      <Filter>src\TeamProgress</Filter>
     </ClInclude>
     <ClInclude Include="src\FovUnlock\FovUnlock.h">
       <Filter>src\FovUnlock</Filter>
@@ -130,6 +136,9 @@
     </ClCompile>
     <ClCompile Include="src\Core\dllmain.cpp">
       <Filter>src\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TeamProgress\TeamProgress.cpp">
+      <Filter>src\TeamProgress</Filter>
     </ClCompile>
     <ClCompile Include="src\FovUnlock\FovUnlock.cpp">
       <Filter>src\FovUnlock</Filter>

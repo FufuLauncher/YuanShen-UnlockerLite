@@ -22,6 +22,9 @@ namespace Config
         // [FovRecover]
         bool  fovRecoverEnabled = true;    // Value，呼出鼠标/失焦时平滑恢复原生视场角
 
+        // [TeamProgress]
+        bool  teamProgressEnabled = false; // Value，移除配队读条（默认关闭）
+
         // [WaitDebugger] —— 只有 Debug 版会看这个值，Release 下读了也没人用。
         // 默认 false：普通注入立刻装 hook，不做任何等待。
         bool  debugWaitAttach   = false;   // Value，注入后等调试器附加

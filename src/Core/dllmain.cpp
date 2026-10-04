@@ -6,6 +6,7 @@
 #include "Hooks.h"
 #include "Logger.h"
 #include "ProcessInfo.h"
+#include "TeamProgress.h"
 #include "Watcher.h"
 
 namespace
@@ -28,6 +29,7 @@ namespace
         Config::Reload();
         FpsUnlock::Apply();
         FovUnlock::Apply();
+        TeamProgress::Apply();
     }
 
     void Shutdown()
@@ -37,6 +39,7 @@ namespace
         Watcher::Stop();
         FpsUnlock::Uninit();
         FovUnlock::Uninit();
+        TeamProgress::Uninit();
 
         Hooks::DisableAll();
 

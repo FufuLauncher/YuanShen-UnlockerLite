@@ -6,6 +6,7 @@
 #include "Game.h"
 #include "Patterns.h"
 #include "SpawnWatch.h"
+#include "TeamProgress.h"
 #include <MinHook.h>
 #include <atomic>
 
@@ -110,6 +111,13 @@ namespace Hooks
                           Patterns::Sig::TargetFrameRateGetterCall,
                           Patterns::Rva::TargetFrameRateGetter);
 
+        if (Install(TeamProgress::OpenTeamHook(),
+                    &TeamProgress::DetourOpenTeam,
+                    "OpenTeam",
+                    Patterns::Sig::OpenTeam, 0)) {
+            TeamProgress::Init();
+        }
+
         // 给游戏内网页的浏览器进程注入兼容层
         InstallExport(SpawnWatch::CreateProcessWHook(),
                       &SpawnWatch::DetourCreateProcessW,
@@ -121,6 +129,8 @@ namespace Hooks
 
     void Uninit()
     {
+        TeamProgress::Uninit();
+
         MH_DisableHook(MH_ALL_HOOKS);
         MH_RemoveHook(MH_ALL_HOOKS);
 
