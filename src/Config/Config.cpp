@@ -1,4 +1,4 @@
-﻿#define WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "Config.h"
 #include "Ini.h"
@@ -53,12 +53,14 @@ namespace Config
         v.fpsGetterClamp    = ReadBool(ini, "FpsGetterClamp", v.fpsGetterClamp);
         v.fovEnabled        = ReadBool(ini, "Fov", v.fovEnabled);
         v.targetFov         = ReadInt(ini, "TargetFov", v.targetFov);
+        v.fovRecoverEnabled = ReadBool(ini, "FovRecover", v.fovRecoverEnabled);
         v.debugWaitAttach   = ReadBool(ini, "WaitDebugger", v.debugWaitAttach);
 
         LOG("Config", "生效配置：[Fps]=%d [TargetFps]=%d [FpsGetterClamp]=%d",
             v.fpsEnabled ? 1 : 0, v.targetFps, v.fpsGetterClamp ? 1 : 0);
-        LOG("Config", "生效配置：[Fov]=%d [TargetFov]=%d [WaitDebugger]=%d（后者仅 Debug 版有效）",
-            v.fovEnabled ? 1 : 0, v.targetFov, v.debugWaitAttach ? 1 : 0);
+        LOG("Config", "生效配置：[Fov]=%d [TargetFov]=%d [FovRecover]=%d [WaitDebugger]=%d（后者仅 Debug 版有效）",
+            v.fovEnabled ? 1 : 0, v.targetFov, v.fovRecoverEnabled ? 1 : 0,
+            v.debugWaitAttach ? 1 : 0);
     }
 
     static bool LoadInto(Values& v)

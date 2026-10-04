@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
@@ -16,7 +16,9 @@ namespace Config
         // [Fov]
         bool  fovEnabled        = false;   // Value，默认关闭
         // [TargetFov]
-        int   targetFov         = 60;      // Value，有效范围 [1, 179]
+        int   targetFov         = 60;      // Value，有效范围 [30, 179]
+        // [FovRecover]
+        bool  fovRecoverEnabled = true;    // Value，呼出鼠标/失焦时平滑恢复原生视场角
 
         // [WaitDebugger] —— 只有 Debug 版会看这个值，Release 下读了也没人用。
         // 默认 false：普通注入立刻装 hook，不做任何等待。
