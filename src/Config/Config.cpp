@@ -51,13 +51,15 @@ namespace Config
         v.fpsEnabled        = ReadBool(ini, "Fps", v.fpsEnabled);
         v.targetFps         = ReadInt(ini, "TargetFps", v.targetFps);
         v.fpsGetterClamp    = ReadBool(ini, "FpsGetterClamp", v.fpsGetterClamp);
+        v.fpsBackgroundLimit = ReadBool(ini, "FpsBackgroundLimit", v.fpsBackgroundLimit);
         v.fovEnabled        = ReadBool(ini, "Fov", v.fovEnabled);
         v.targetFov         = ReadInt(ini, "TargetFov", v.targetFov);
         v.fovRecoverEnabled = ReadBool(ini, "FovRecover", v.fovRecoverEnabled);
         v.debugWaitAttach   = ReadBool(ini, "WaitDebugger", v.debugWaitAttach);
 
-        LOG("Config", "生效配置：[Fps]=%d [TargetFps]=%d [FpsGetterClamp]=%d",
-            v.fpsEnabled ? 1 : 0, v.targetFps, v.fpsGetterClamp ? 1 : 0);
+        LOG("Config", "生效配置：[Fps]=%d [TargetFps]=%d [FpsGetterClamp]=%d [FpsBackgroundLimit]=%d",
+            v.fpsEnabled ? 1 : 0, v.targetFps, v.fpsGetterClamp ? 1 : 0,
+            v.fpsBackgroundLimit ? 1 : 0);
         LOG("Config", "生效配置：[Fov]=%d [TargetFov]=%d [FovRecover]=%d [WaitDebugger]=%d（后者仅 Debug 版有效）",
             v.fovEnabled ? 1 : 0, v.targetFov, v.fovRecoverEnabled ? 1 : 0,
             v.debugWaitAttach ? 1 : 0);

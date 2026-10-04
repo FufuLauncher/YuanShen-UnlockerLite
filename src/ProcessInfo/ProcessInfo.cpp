@@ -1,4 +1,4 @@
-﻿#define WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "ProcessInfo.h"
 #include "Logger.h"
@@ -110,6 +110,19 @@ namespace ProcessInfo
     }
 
     const Snapshot& Get() { return g_snapshot; }
+
+    bool IsForeground()
+    {
+        const HWND foreground = GetForegroundWindow();
+        if (!foreground)
+            return true;
+
+        DWORD pid = 0;
+        GetWindowThreadProcessId(foreground, &pid);
+        // pid 取不到时也当作在前台，与上面同样的保守取向。
+        // 这里现取进程 id 而不读快照，免得依赖 Capture 的调用顺序。
+        return pid == 0 || pid == GetCurrentProcessId();
+    }
 
     bool SelfSiblingPath(const wchar_t* ext, wchar_t* out, size_t outChars)
     {

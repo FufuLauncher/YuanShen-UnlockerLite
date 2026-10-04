@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <cstdint>
@@ -33,6 +33,11 @@ namespace ProcessInfo
     };
 
     bool Capture(HMODULE selfHandle = nullptr);
+
+    // 本进程的窗口当前是否在前台。
+    // 取不到前景窗口等异常情况一律返回 true（宁可当作"在前台"，
+    // 免得因一次查询失败就把玩家按后台策略处理）。
+    bool IsForeground();
 
     bool SelfSiblingPath(const wchar_t* ext, wchar_t* out, size_t outChars);
 

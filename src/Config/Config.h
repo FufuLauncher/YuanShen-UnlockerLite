@@ -12,6 +12,8 @@ namespace Config
         int   targetFps         = 240;     // Value，0 或负数 = 不限帧（内部折算成 999）
         // [FpsGetterClamp]
         bool  fpsGetterClamp    = false;   // Value，把 getter 返回值钳到官方上限
+        // [FpsBackgroundLimit]
+        bool  fpsBackgroundLimit = true;   // Value，游戏不在前台时把帧率压到 10
 
         // [Fov]
         bool  fovEnabled        = false;   // Value，默认关闭

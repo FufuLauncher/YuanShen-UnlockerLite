@@ -1,4 +1,4 @@
-﻿#define WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "FpsUnlock.h"
 #include "Config.h"
@@ -21,7 +21,12 @@ namespace FpsUnlock
 
     static std::atomic<bool> g_clampEnabled{ false };
 
+    static std::atomic<bool> g_backgroundLimit{ false };
+
     static constexpr int kGetterClampMax = 120;
+
+    // 后台（游戏窗口不是前台）时的帧率上限。
+    static constexpr int kBackgroundFps = 10;
 
     // "不限帧"统一写成这个值：贴着引擎硬上限 1000，等效不限帧，
     // 但本身是个合法正整数。写 0 / 负数会让游戏闪退，不能落到全局里。
@@ -148,12 +153,25 @@ namespace FpsUnlock
         return true;
     }
 
+    // 本轮该写进全局的值。后台限帧开且不在前台时压到 kBackgroundFps。
+    // 用 min 而不是直接覆盖：目标本身比 kBackgroundFps 还低时（比如填 5）
+    // 不该被"限制"反倒抬高帧率。999 表示不限帧，所以也会被压下来。
+    static int EffectiveTarget()
+    {
+        const int target = g_target.load(std::memory_order_relaxed);
+
+        if (g_backgroundLimit.load(std::memory_order_relaxed) && !ProcessInfo::IsForeground())
+            return (target < kBackgroundFps) ? target : kBackgroundFps;
+
+        return target;
+    }
+
     static void WriteOnce()
     {
         if (!g_fpsAddr)
             return;
 
-        *g_fpsAddr = g_target.load(std::memory_order_relaxed);
+        *g_fpsAddr = EffectiveTarget();
     }
 
     static DWORD WINAPI WriterProc(LPVOID)
@@ -207,6 +225,7 @@ namespace FpsUnlock
         g_target.store(NormalizeTarget(cfg.targetFps), std::memory_order_relaxed);
         g_enabled.store(cfg.fpsEnabled, std::memory_order_relaxed);
         g_clampEnabled.store(cfg.fpsGetterClamp, std::memory_order_relaxed);
+        g_backgroundLimit.store(cfg.fpsBackgroundLimit, std::memory_order_relaxed);
 
         if (!cfg.fpsEnabled) {
             LOG_MSG("Fps", "配置里已关闭：停止周期性覆写");
@@ -218,9 +237,10 @@ namespace FpsUnlock
 
         WriteOnce();
 
-        LOG("Fps", "已应用：目标 %d fps，覆写间隔 %lu ms，getter 钳制=%d（上限 %d）",
+        LOG("Fps", "已应用：目标 %d fps，覆写间隔 %lu ms，getter 钳制=%d（上限 %d），后台限帧=%d（%d fps）",
             g_target.load(std::memory_order_relaxed), kWriteIntervalMs,
-            cfg.fpsGetterClamp ? 1 : 0, kGetterClampMax);
+            cfg.fpsGetterClamp ? 1 : 0, kGetterClampMax,
+            cfg.fpsBackgroundLimit ? 1 : 0, kBackgroundFps);
     }
 
     bool Init()

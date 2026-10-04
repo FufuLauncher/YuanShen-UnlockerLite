@@ -4,6 +4,7 @@
 #include "Config.h"
 #include "ExponentialFilter.h"
 #include "Logger.h"
+#include "ProcessInfo.h"
 #include <atomic>
 
 namespace FovUnlock
@@ -56,17 +57,6 @@ namespace FovUnlock
     }
 
 
-    static bool IsGameFocused()
-    {
-        const HWND foreground = GetForegroundWindow();
-        if (!foreground)
-            return true;
-
-        DWORD pid = 0;
-        GetWindowThreadProcessId(foreground, &pid);
-        return pid == 0 || pid == GetCurrentProcessId();
-    }
-
     static void StopPollThread()
     {
         if (!g_pollStop)
@@ -89,7 +79,7 @@ namespace FovUnlock
     static DWORD WINAPI PollProc(LPVOID)
     {
         for (;;) {
-            const bool uiActive = IsCursorVisible() || !IsGameFocused();
+            const bool uiActive = IsCursorVisible() || !ProcessInfo::IsForeground();
 
             const float target = (g_recoverEnabled.load(std::memory_order_relaxed) && uiActive)
                                      ? 0.0f
