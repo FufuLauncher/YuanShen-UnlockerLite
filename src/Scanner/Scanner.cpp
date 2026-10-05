@@ -121,25 +121,59 @@ namespace Scanner
         if (!base)
             return 0;
 
-        const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(base);
-        if (dos->e_magic != IMAGE_DOS_SIGNATURE)
+        WORD e_magic = 0;
+        if (!Game::TryRead<WORD>(base + offsetof(IMAGE_DOS_HEADER, e_magic), e_magic))
+            return 0;
+        if (e_magic != IMAGE_DOS_SIGNATURE)
             return 0;
 
-        const auto* nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
-        if (nt->Signature != IMAGE_NT_SIGNATURE)
+        LONG e_lfanew = 0;
+        if (!Game::TryRead<LONG>(base + offsetof(IMAGE_DOS_HEADER, e_lfanew), e_lfanew))
+            return 0;
+        if (e_lfanew <= 0)
             return 0;
 
-        const WORD sectionCount = nt->FileHeader.NumberOfSections;
-        const auto* section = IMAGE_FIRST_SECTION(nt);
+        const uintptr_t ntBase = base + static_cast<uintptr_t>(e_lfanew);
+
+
+        struct NtPrefix
+        {
+            DWORD               Signature;
+            IMAGE_FILE_HEADER   FileHeader;
+        };
+        static_assert(sizeof(NtPrefix) == 24, "NT 前缀应为 4 + 20 字节");
+
+        NtPrefix nt{};
+        if (!Game::TryRead<NtPrefix>(ntBase, nt))
+            return 0;
+        if (nt.Signature != IMAGE_NT_SIGNATURE)
+            return 0;
+
+        const WORD sectionCount = nt.FileHeader.NumberOfSections;
+        if (sectionCount == 0)
+            return 0;
+
+
+        size_t optSize = nt.FileHeader.SizeOfOptionalHeader;
+        if (optSize < sizeof(NtPrefix))
+            optSize = sizeof(NtPrefix);
+
+        const uintptr_t sectionBase = ntBase + sizeof(NtPrefix) + optSize;
 
         for (WORD i = 0; i < sectionCount; ++i) {
-            const size_t size = section[i].Misc.VirtualSize;
-            if (section[i].VirtualAddress == 0 || size == 0)
+            IMAGE_SECTION_HEADER sec{};
+            if (!Game::TryRead<IMAGE_SECTION_HEADER>(
+                    sectionBase + static_cast<uintptr_t>(i) * sizeof(IMAGE_SECTION_HEADER),
+                    sec))
+                return 0;
+
+            const size_t size = sec.Misc.VirtualSize;
+            if (sec.VirtualAddress == 0 || size == 0)
                 continue;
-            if ((section[i].Characteristics & IMAGE_SCN_MEM_EXECUTE) == 0)
+            if ((sec.Characteristics & IMAGE_SCN_MEM_EXECUTE) == 0)
                 continue;
 
-            const uintptr_t addr = base + section[i].VirtualAddress;
+            const uintptr_t addr = base + sec.VirtualAddress;
             if (!Game::IsReadable(addr, size))
                 continue;
 
@@ -159,11 +193,13 @@ namespace Scanner
         if (!instruction)
             return 0;
 
+
         const uintptr_t field = instruction + offset;
-        if (!Game::IsReadable(field, sizeof(int32_t)))
+
+        int32_t rel = 0;
+        if (!Game::TryRead<int32_t>(field, rel))
             return 0;
 
-        const int32_t rel = *reinterpret_cast<const int32_t*>(field);
         return instruction + instrSize + static_cast<intptr_t>(rel);
     }
 
